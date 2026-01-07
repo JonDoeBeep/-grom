@@ -108,13 +108,20 @@ class PersonalityCog(commands.Cog, name="Personality"):
             await ctx.send(embed=embed)
         
         elif action == "set":
+            # Check mod permissions for setting personality
+            if ctx.guild:
+                perms = ctx.author.guild_permissions
+                if not (perms.manage_messages or perms.administrator):
+                    await ctx.send("You need moderator permissions to change the personality.", ephemeral=True)
+                    return
+            
             if not personality:
-                await ctx.send("Please specify a personality name: `/personality set <name>`")
+                await ctx.send("Please specify a personality name: `/personality set <name>`", ephemeral=True)
                 return
             
             result = manager.get_personality_by_name(personality)
             if not result:
-                await ctx.send(f"Personality '{personality}' not found. Use `/personality list` to see available options.")
+                await ctx.send(f"Personality '{personality}' not found. Use `/personality list` to see available options.", ephemeral=True)
                 return
             
             idx, p = result

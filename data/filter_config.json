@@ -1,0 +1,22 @@
+{
+  "bad_words": [
+    "fuck",
+    "shit",
+    "bitch",
+    "ass",
+    "damn",
+    "cunt",
+    "dick",
+    "cock",
+    "pussy",
+    "bastard",
+    "whore",
+    "slut",
+    "faggot",
+    "nigger",
+    "nigga",
+    "retard",
+    "retarded"
+  ],
+  "_comment": "Add or remove words as needed. Uses exact word boundary matching (case-insensitive)."
+}

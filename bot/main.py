@@ -12,7 +12,7 @@ from bot.services.ai_client import AIClient, download_image, download_pdf
 from bot.services.personalities import init_personality_manager, get_personality_manager
 from bot.services.auto_response import get_auto_response_engine, init_auto_response_engine
 from bot.utils.logging import get_logger, set_debug_mode
-from bot.utils.discord_helpers import convert_mentions_and_emojis, update_bot_nickname, strip_bot_mention
+from bot.utils.discord_helpers import convert_mentions_and_emojis, update_bot_nickname, strip_bot_mention, filter_response
 
 logger = get_logger(__name__)
 
@@ -213,6 +213,9 @@ class GromBot(commands.Bot):
                 
                 # Convert mentions and emojis
                 response = convert_mentions_and_emojis(response, message.guild)
+                
+                # Filter out dangerous mentions and bad words
+                response = filter_response(response, message.guild)
                 
                 # Log bot response to context
                 context_manager.add_message(

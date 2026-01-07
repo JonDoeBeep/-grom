@@ -4,7 +4,9 @@ Help Cog - Help and utility commands.
 
 import discord
 from discord.ext import commands
+from discord import app_commands
 
+from bot.utils.permissions import is_mod, check_mod_permissions
 from bot.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -69,18 +71,19 @@ class HelpCog(commands.Cog, name="Help"):
         
         await ctx.send(embed=embed)
     
-    @commands.command(name="sync")
-    @commands.is_owner()
+    @commands.hybrid_command(name="sync", description="Sync slash commands to Discord (mod only)")
+    @is_mod()
+    @app_commands.check(check_mod_permissions)
     async def sync(self, ctx: commands.Context):
-        """Sync slash commands to Discord (owner only)."""
-        await ctx.defer()
+        """Sync slash commands to Discord (mod only)."""
+        await ctx.defer(ephemeral=True)
         
         try:
             synced = await self.bot.tree.sync()
-            await ctx.send(f"Synced {len(synced)} commands globally.")
+            await ctx.send(f"Synced {len(synced)} commands globally.", ephemeral=True)
             logger.info(f"Synced {len(synced)} commands")
         except Exception as e:
-            await ctx.send(f"Failed to sync commands: {e}")
+            await ctx.send(f"Failed to sync commands: {e}", ephemeral=True)
             logger.error(f"Failed to sync commands: {e}")
 
 

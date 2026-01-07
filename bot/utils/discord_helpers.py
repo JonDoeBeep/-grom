@@ -4,12 +4,92 @@ Handles mention/emoji conversion and other Discord-specific transformations.
 """
 
 import discord
+import json
 import re
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Set
 
 from bot.utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+# Cache for bad words list
+_bad_words_cache: Optional[Set[str]] = None
+
+
+def _load_bad_words() -> Set[str]:
+    """Load bad words from config file."""
+    global _bad_words_cache
+    if _bad_words_cache is not None:
+        return _bad_words_cache
+    
+    try:
+        config_path = Path("data/filter_config.json")
+        if config_path.exists():
+            with open(config_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                _bad_words_cache = set(word.lower() for word in data.get("bad_words", []))
+                return _bad_words_cache
+    except Exception as e:
+        logger.error(f"Error loading bad words config: {e}")
+    
+    _bad_words_cache = set()
+    return _bad_words_cache
+
+
+def filter_response(text: str, guild: Optional[discord.Guild]) -> str:
+    """
+    Filter bot responses to remove dangerous mentions and bad words.
+    
+    Removes:
+    - @everyone and @here mentions
+    - Role mentions (<@&ID>)
+    - User mentions (replaced with display name, no ping)
+    - Bad words (exact word boundary matching)
+    
+    Args:
+        text: The response text to filter
+        guild: The Discord guild for looking up member display names
+        
+    Returns:
+        Filtered text safe for sending
+    """
+    if not text:
+        return text
+    
+    # Remove @everyone and @here
+    text = text.replace("@everyone", "@\u200beveryone")
+    text = text.replace("@here", "@\u200bhere")
+    
+    # Remove role mentions (<@&ID>) - replace with @deleted-role
+    text = re.sub(r'<@&\d+>', '@deleted-role', text)
+    
+    # Replace user mentions with display names (no ping)
+    def replace_user_mention(match):
+        user_id = match.group(1)
+        if guild:
+            member = guild.get_member(int(user_id))
+            if member:
+                return f"@{member.display_name}"
+        return "@unknown-user"
+    
+    # Match <@ID> and <@!ID> patterns
+    text = re.sub(r'<@!?(\d+)>', replace_user_mention, text)
+    
+    # Filter bad words using exact word boundary matching
+    bad_words = _load_bad_words()
+    if bad_words:
+        def replace_bad_word(match):
+            return '*' * len(match.group(0))
+        
+        # Build pattern for word boundary matching
+        # Sort by length (longest first) to match longer phrases first
+        sorted_words = sorted(bad_words, key=len, reverse=True)
+        pattern = r'\b(' + '|'.join(re.escape(word) for word in sorted_words) + r')\b'
+        text = re.sub(pattern, replace_bad_word, text, flags=re.IGNORECASE)
+    
+    return text
 
 
 def convert_mentions_and_emojis(message_text: str, guild: Optional[discord.Guild]) -> str:
