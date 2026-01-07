@@ -1,0 +1,9 @@
+{
+    "enabled": true,
+    "designated_channel_id": "1379952332065869896",
+    "base_chance": 0.02,
+    "max_chance": 0.8,
+    "min_seconds_between": 30,
+    "max_per_window": 3,
+    "window_seconds": 300
+}
